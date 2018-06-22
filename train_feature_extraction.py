@@ -49,15 +49,14 @@ logits = tf.matmul(fc7, fc8W) + fc8b
 # TODO: Define loss, training, accuracy operations.
 # HINT: Look back at your traffic signs project solution, you may
 # be able to reuse some the code.
-y = tf.placeholder(tf.int32, (None))
-one_hot_y = tf.one_hot(y, 43)
-cross_entropy = tf.nn.softmax_cross_entropy_with_logits(labels=one_hot_y, logits=logits)
+y = tf.placeholder(tf.int64, None)
+cross_entropy = tf.nn.sparse_softmax_cross_entropy_with_logits(labels=y, logits=logits)
 loss_operation = tf.reduce_mean(cross_entropy)
-optimizer = tf.train.AdamOptimizer(learning_rate = 0.001)
+optimizer = tf.train.AdamOptimizer()
 training_operation = optimizer.minimize(loss_operation, var_list=[fc8W, fc8b])
 
-correct_prediction = tf.equal(tf.argmax(logits, 1), tf.argmax(one_hot_y, 1))
-accuracy_operation = tf.reduce_mean(tf.cast(correct_prediction, tf.float32))
+correct_prediction = tf.argmax(logits, 1)
+accuracy_operation = tf.reduce_mean(tf.cast(tf.equal(correct_prediction, y), tf.float32))
 saver = tf.train.Saver()
 
 # TODO: Train and evaluate the feature extraction model.
@@ -66,7 +65,7 @@ BATCH_SIZE = 128
 
 def evaluate(X_data, y_data):
     num_examples = len(X_data)
-    total_accuracy = 0
+    total_accuracy = 0.0
     sess = tf.get_default_session()
     for offset in range(0, num_examples, BATCH_SIZE):
         batch_x, batch_y = X_data[offset:offset+BATCH_SIZE], y_data[offset:offset+BATCH_SIZE]
@@ -82,11 +81,11 @@ with tf.Session() as sess:
     print("Training...")
     print()
     for i in range(EPOCHS):
-        X_train_normal, y_train = shuffle(X_train, y_train)
+        X_train_normal, y_train_normal = shuffle(X_train, y_train)
         t0 = time.time()
         for offset in range(0, num_examples, BATCH_SIZE):
             end = offset + BATCH_SIZE
-            batch_x, batch_y = X_train_normal[offset:end], y_train[offset:end]
+            batch_x, batch_y = X_train_normal[offset:end], y_train_normal[offset:end]
             sess.run(training_operation, feed_dict={x: batch_x, y: batch_y})
 
         validation_accuracy = evaluate(X_valid, y_valid)
